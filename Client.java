@@ -15,7 +15,7 @@ import java.util.InputMismatchException;
  * @author Kerly Titus
  */
 
-public class Client { 
+public class Client extends Thread {
     
     private static int numberOfTransactions;   		/* Number of transactions to process */
     private static int maxNbTransactions;      		/* Maximum number of transactions */
@@ -157,9 +157,18 @@ public class Client {
          
          while (i < getNumberOfTransactions())
          {  
-            // while( objNetwork.getInBufferStatus().equals("full") );     /* Alternatively, busy-wait until the network input buffer is available */
-                                             	
-            transaction[i].setTransactionStatus("sent");   /* Set current transaction status */
+
+             // While the network buffer is full, yield our CPU time.
+             // We do the same in case the network is offline. We wait for it to come back online.
+             // The same happens if the server is not connected (because otherwise, we send the transactions to the void.)
+             while( objNetwork.getInBufferStatus().equals("full") ||
+                    objNetwork.getNetworkStatus().equals("inactive") ||
+                     objNetwork.getServerConnectionStatus().equals("disconnected") )
+             {
+                 yield();
+             };
+
+             transaction[i].setTransactionStatus("sent");   /* Set current transaction status */
            
             System.out.println("\n DEBUG : Client.sendTransactions() - sending transaction on account " + transaction[i].getAccountNumber());
             
@@ -213,6 +222,25 @@ public class Client {
     	Transactions transact = new Transactions();
     	long sendClientStartTime, sendClientEndTime, receiveClientStartTime, receiveClientEndTime;
     
-	/* Implement the code for the run method */
+	    /* Implement the code for the run method */
+
+        // Checking what type of client thread we are.
+        if(getClientOperation().equals("sending"))
+        {
+            // We are sending.
+
+            // Initializing sending client
+            sendClientStartTime = System.currentTimeMillis();
+
+            sendTransactions();
+
+            sendClientEndTime = System.currentTimeMillis();
+
+            System.out.println("\n Terminating client sending thread - " + " Running time " + (sendClientEndTime - sendClientStartTime) + " milliseconds");
+        }
+        else
+        {
+            // We are receiving.
+        }
     }
 }
