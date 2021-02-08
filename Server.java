@@ -191,9 +191,7 @@ public class Server extends Thread {
               
          /* Process the accounts until the client disconnects */
          while ((!objNetwork.getClientConnectionStatus().equals("disconnected")))
-         { 
-        	 /* while( (objNetwork.getInBufferStatus().equals("empty"))); */  /* Alternatively, busy-wait until the network input buffer is available */
-        	 
+         {
         	 if (!objNetwork.getInBufferStatus().equals("empty"))
         	 {
         		 System.out.println("\n DEBUG : Server.processTransactions() - transferring in account " + trans.getAccountNumber());
@@ -228,8 +226,6 @@ public class Server extends Thread {
 
                      System.out.println("\n DEBUG : Server.processTransactions() - Obtaining balance from account" + trans.getAccountNumber());
                  }
-                 // while( (objNetwork.getOutBufferStatus().equals("full"))); /* Alternatively,  busy-wait until the network output buffer is available */
-                                                           
         		 System.out.println("\n DEBUG : Server.processTransactions() - transferring out account " + trans.getAccountNumber());
 
                  // Check if network is still available. If it's not, wait until it is back online. Yield CPU time during this time.

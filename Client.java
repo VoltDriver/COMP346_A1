@@ -156,8 +156,7 @@ public class Client extends Thread {
          int i = 0;     /* index of transaction array */
          
          while (i < getNumberOfTransactions())
-         {  
-
+         {
              // While the network buffer is full, yield our CPU time.
              // We do the same in case the network is offline. We wait for it to come back online.
              // The same happens if the server is not connected (because otherwise, we send the transactions to the void.)
@@ -237,6 +236,7 @@ public class Client extends Thread {
             sendClientEndTime = System.currentTimeMillis();
 
             System.out.println("\n Terminating client sending thread - " + " Running time " + (sendClientEndTime - sendClientStartTime) + " milliseconds");
+            this.interrupt();
         }
         else
         {
