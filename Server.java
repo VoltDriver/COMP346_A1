@@ -332,7 +332,7 @@ public class Server extends Thread {
         serverStartTime = System.currentTimeMillis();
 
         // Starting processing
-        processTransactions(transaction);
+        processTransactions(trans);
 
         serverEndTime = System.currentTimeMillis();
         

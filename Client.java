@@ -188,7 +188,14 @@ public class Client extends Thread {
          int i = 0;     /* Index of transaction array */
          
          while (i < getNumberOfTransactions())
-         {     
+         {   //  
+        	 while (objNetwork.getOutBufferStatus().equals("empty") || 
+        			 objNetwork.getClientConnectionStatus().equals("disconnected") ||
+        			 objNetwork.getNetworkStatus().equals("inactive"))
+        	 {
+        		 yield();
+        	 };
+        		 
         	 // while( objNetwork.getOutBufferStatus().equals("empty"));  	/* Alternatively, busy-wait until the network output buffer is available */
                                                                         	
             objNetwork.receive(transact);                               	/* Receive updated transaction from the network buffer */
@@ -238,9 +245,18 @@ public class Client extends Thread {
             System.out.println("\n Terminating client sending thread - " + " Running time " + (sendClientEndTime - sendClientStartTime) + " milliseconds");
             this.interrupt();
         }
-        else
+        else if (getClientOperation().equals("receiving"))
         {
             // We are receiving.
+        	
+        	// Initializing receiving client
+            receiveClientStartTime = System.currentTimeMillis();
+
+            receiveTransactions(transact);
+
+            receiveClientEndTime = System.currentTimeMillis();
+
+            System.out.println("\n Terminating client sending thread - " + " Running time " + (receiveClientEndTime - receiveClientStartTime) + " milliseconds");
         }
     }
 }
