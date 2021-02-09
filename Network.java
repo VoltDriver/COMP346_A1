@@ -553,20 +553,24 @@ public class Network extends Thread {
     public void run()
     {	
     	System.out.println("\n DEBUG : Network.run() - starting network thread");
-    	
-    	while (true)
-    	{
-		/* Implement the code for the run method */
-    		if(getServerConnectionStatus().equals("disconnected") && getClientConnectionStatus().equals("disconnected"))
-    		{
-    			System.out.println("\n Terminating network thread - Client " + getClientConnectionStatus() + " Server " + getServerConnectionStatus());
-    			//System.exit(0);
-    			this.interrupt();
-    		}
-    		else
-    		{
-    			yield();
-    		}
-    	}    
+
+        long networkStartTime, networkEndTime;
+
+        networkStartTime = System.currentTimeMillis();
+
+    	// If the server or client is online, then we yield our CPU time.
+    	while(getServerConnectionStatus().equals("connected")
+                || getClientConnectionStatus().equals("connected")
+                || getServerConnectionStatus().equals("idle")
+                || getClientConnectionStatus().equals("idle"))
+        {
+            yield();
+        }
+
+    	networkEndTime = System.currentTimeMillis();
+
+    	System.out.println("\n Terminating network thread - Client " + getClientConnectionStatus() + " Server " + getServerConnectionStatus());
+        System.out.println("\n Network Thread" + " Running time " + (networkEndTime - networkStartTime) + " milliseconds");
+    	this.interrupt();
     }
 }
