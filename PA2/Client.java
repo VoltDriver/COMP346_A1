@@ -154,16 +154,21 @@ public class Client extends Thread {
          int i = 0;     /* index of transaction array */
          
          while (i < getNumberOfTransactions())
-         {  
-	
-        //	 while (Network.getInBufferStatus().equals("full"))
-        //	{ 
-        // 	  Thread.yield(); 	/* Yield the cpu if the network input buffer is full */
-        //  }
-                                              	
-            transaction[i].setTransactionStatus("sent");   /* Set current transaction status */
+         {
+
+             // While the network buffer is full, yield our CPU time.
+             // We do the same in case the network is offline. We wait for it to come back online.
+             // The same happens if the server is not connected (because otherwise, we send the transactions to the void.)
+             while( Network.getInBufferStatus().equals("full") ||
+                     Network.getNetworkStatus().equals("inactive") ||
+                     Network.getServerConnectionStatus().equals("disconnected") )
+             {
+                 yield();
+             };
+
+             transaction[i].setTransactionStatus("sent");   /* Set current transaction status */
            
-            /* System.out.println("\n DEBUG : Client.sendTransactions() - sending transaction on account " + transaction[i].getAccountNumber()); */ 
+            /* System.out.println("\n DEBUG : Client.sendTransactions() - sending transaction on account " + transaction[i].getAccountNumber()); */
             
             Network.send(transaction[i]);                            /* Transmit current transaction */
             i++;          
@@ -182,12 +187,13 @@ public class Client extends Thread {
          int i = 0;     /* Index of transaction array */
          
          while (i < getNumberOfTransactions())
-         {   
-        	// while (Network.getOutBufferStatus().equals("empty")) 
-        	// { 
-        	//	 Thread.yield(); 	/* Yield the cpu if the network output buffer is full */
-        		 
-        	// }
+         {
+             while (Network.getOutBufferStatus().equals("empty") ||
+                     Network.getClientConnectionStatus().equals("disconnected") ||
+                     Network.getNetworkStatus().equals("inactive"))
+             {
+                 yield();
+             };
                                                                             	
             Network.receive(transact);                               	/* Receive updated transaction from the network buffer */
             
@@ -223,9 +229,38 @@ public class Client extends Thread {
         long receiveClientStartTime = 0;
         long receiveClientEndTime = 0;
 
-     
-         /*................................................................................................................................................................................................................*/
-              
-                System.out.println("\n Terminating client receiving thread - " + " Running time " +  (receiveClientEndTime - receiveClientStartTime));
+        // Checking what type of client thread we are.
+        if(getClientOperation().equals("sending"))
+        {
+            // We are sending.
+
+            // Initializing sending client
+            sendClientStartTime = System.currentTimeMillis();
+
+            sendTransactions();
+
+            sendClientEndTime = System.currentTimeMillis();
+
+            System.out.println("\n Terminating client sending thread - " + " Running time " + (sendClientEndTime - sendClientStartTime) + " milliseconds");
+
+            this.interrupt();
+        }
+        else if (getClientOperation().equals("receiving"))
+        {
+            // We are receiving.
+
+            // Initializing receiving client
+            receiveClientStartTime = System.currentTimeMillis();
+
+            receiveTransactions(transact);
+
+            receiveClientEndTime = System.currentTimeMillis();
+
+            System.out.println("\n Terminating client receiving thread - " + " Running time " + (receiveClientEndTime - receiveClientStartTime) + " milliseconds");
+
+            Network.disconnect(Network.getClientIP());
+
+            this.interrupt();
+        }
     }
 }
