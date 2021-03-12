@@ -21,6 +21,7 @@ public class Client extends Thread {
     private static int maxNbTransactions;      		/* Maximum number of transactions */
     private static Transactions [] transaction; 	        /* Transactions to be processed */
     private String clientOperation;    			/* sending or receiving */
+    private static boolean initialized = false;
        
 	/** Constructor method of Client class
  	 * 
@@ -44,6 +45,7 @@ public class Client extends Thread {
            {   System.out.println("\n Terminating client application, network unavailable");
                System.exit(0);
            }
+           initialized = true;
        	}
        else
     	   if (operation.equals("receiving"))
@@ -167,11 +169,12 @@ public class Client extends Thread {
              };
 
              transaction[i].setTransactionStatus("sent");   /* Set current transaction status */
-           
-            /* System.out.println("\n DEBUG : Client.sendTransactions() - sending transaction on account " + transaction[i].getAccountNumber()); */
-            
-            Network.send(transaction[i]);                            /* Transmit current transaction */
-            i++;          
+
+             System.out.println("\n DEBUG : Client.sendTransactions() - sending transaction on account " + transaction[i].getAccountNumber());
+
+             Network.send(transaction[i]);                            /* Transmit current transaction */
+             i++;
+             System.out.println("Transaction sent D2");
          }
          
     }
@@ -194,13 +197,13 @@ public class Client extends Thread {
              {
                  yield();
              };
-                                                                            	
-            Network.receive(transact);                               	/* Receive updated transaction from the network buffer */
-            
-            /* System.out.println("\n DEBUG : Client.receiveTransactions() - receiving updated transaction on account " + transact.getAccountNumber()); */
-            
-            System.out.println(transact);                               /* Display updated transaction */    
-            i++;
+
+             Network.receive(transact);                               	/* Receive updated transaction from the network buffer */
+
+             /* System.out.println("\n DEBUG : Client.receiveTransactions() - receiving updated transaction on account " + transact.getAccountNumber()); */
+
+             System.out.println(transact);                               /* Display updated transaction */
+             i++;
          } 
     }
      
@@ -222,7 +225,11 @@ public class Client extends Thread {
      * @param
      */
     public void run()
-    {   
+    {
+        // Wait until the client is fully initialized to start.
+        while (!initialized)
+            yield();
+
     	Transactions transact = new Transactions();
     	long sendClientStartTime = 0;
         long sendClientEndTime = 0;

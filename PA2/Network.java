@@ -56,7 +56,7 @@ public class Network extends Thread {
          outputIndexClient = 0;
                 
          networkStatus = "active";
-      }     
+      }
         
      /** 
       * Accessor method of Network class
@@ -108,7 +108,7 @@ public class Network extends Thread {
      * @return clientConnectionStatus
      * @param
      */
-     public static String getClientConnectionStatus()
+     public synchronized static String getClientConnectionStatus()
      {
          return clientConnectionStatus;
      }
@@ -174,7 +174,7 @@ public class Network extends Thread {
      * @return inBufferStatus
      * @param
      */
-     public static String getInBufferStatus()
+     public synchronized static String getInBufferStatus()
      {
          return inBufferStatus;
      }
@@ -185,7 +185,7 @@ public class Network extends Thread {
      * @return 
      * @param inBufStatus
      */
-     public static void setInBufferStatus(String inBufStatus)
+     public synchronized static void setInBufferStatus(String inBufStatus)
      { 
          inBufferStatus = inBufStatus;
      }
@@ -196,7 +196,7 @@ public class Network extends Thread {
      * @return outBufferStatus
      * @param
      */
-     public static String getOutBufferStatus()
+     public synchronized static String getOutBufferStatus()
      {
          return outBufferStatus;
      }
@@ -207,7 +207,7 @@ public class Network extends Thread {
      * @return 
      * @param outBufStatus
      */
-     public static void setOutBufferStatus(String outBufStatus)
+     public synchronized static void setOutBufferStatus(String outBufStatus)
      { 
          outBufferStatus = outBufStatus;
      }
@@ -218,7 +218,7 @@ public class Network extends Thread {
      * @return networkStatus
      * @param
      */
-     public static String getNetworkStatus()
+     public synchronized static String getNetworkStatus()
      {
          return networkStatus;
      }
@@ -240,7 +240,7 @@ public class Network extends Thread {
      * @return inputIndexClient
      * @param
      */
-     public static int getinputIndexClient()
+     public synchronized static int getinputIndexClient()
      {
          return inputIndexClient;
      }
@@ -251,8 +251,9 @@ public class Network extends Thread {
      * @return 
      * @param i1
      */
-     public static void setinputIndexClient(int i1)
-     { 
+     public synchronized static void setinputIndexClient(int i1)
+     {
+         System.out.println("DEBUG inputIndexClient modified from " + inputIndexClient + " to " + i1 );
          inputIndexClient = i1;
      }
          
@@ -262,7 +263,7 @@ public class Network extends Thread {
      * @return inputIndexServer
      * @param
      */
-     public static int getinputIndexServer()
+     public synchronized static int getinputIndexServer()
      {
          return inputIndexServer;
      }
@@ -273,8 +274,9 @@ public class Network extends Thread {
      * @return 
      * @param i2
      */
-     public static void setinputIndexServer(int i2)
-     { 
+     public synchronized static void setinputIndexServer(int i2)
+     {
+         System.out.println("DEBUG inputIndexServer modified from " + inputIndexServer + " to " + i2 );
          inputIndexServer = i2;
      }     
          
@@ -284,7 +286,7 @@ public class Network extends Thread {
      * @return outputIndexServer
      * @param
      */
-     public static int getoutputIndexServer()
+     public synchronized static int getoutputIndexServer()
      {
          return outputIndexServer;
      }
@@ -295,8 +297,9 @@ public class Network extends Thread {
      * @return 
      * @param o1
      */
-     public static void setoutputIndexServer(int o1)
-     { 
+     public synchronized static void setoutputIndexServer(int o1)
+     {
+         System.out.println("DEBUG outputIndexServer modified from " + outputIndexServer + " to " + o1 );
          outputIndexServer = o1;
      }
          
@@ -306,7 +309,7 @@ public class Network extends Thread {
      * @return outputIndexClient
      * @param
      */
-     public static int getoutputIndexClient()
+     public synchronized static int getoutputIndexClient()
      {
          return outputIndexClient;
      }
@@ -317,8 +320,9 @@ public class Network extends Thread {
      * @return 
      * @param o2
      */
-     public static void setoutputIndexClient(int o2)
-     { 
+     public synchronized static void setoutputIndexClient(int o2)
+     {
+         System.out.println("DEBUG outputIndexClient modified from " + outputIndexClient + " to " + o2 );
          outputIndexClient = o2;
      }
 
@@ -343,7 +347,7 @@ public class Network extends Thread {
      { 
          maxNbPackets = maxPackets;
      }
-         
+
     /**
      *  Transmitting the transactions from the client to the server through the network 
      *  
@@ -351,9 +355,9 @@ public class Network extends Thread {
      * @param inPacket transaction transferred from the client
      * 
      */
-        public static boolean send(Transactions inPacket)
+        public synchronized static boolean send(Transactions inPacket)
         {
-        	
+            System.out.println("DEBUG T1 Call to Send with " + inputIndexClient);
         		  inComingPacket[inputIndexClient].setAccountNumber(inPacket.getAccountNumber());
         		  inComingPacket[inputIndexClient].setOperationType(inPacket.getOperationType());
         		  inComingPacket[inputIndexClient].setTransactionAmount(inPacket.getTransactionAmount());
@@ -363,7 +367,10 @@ public class Network extends Thread {
             
         		 /* System.out.println("\n DEBUG : Network.send() - index inputIndexClient " + inputIndexClient); */
         		  /* System.out.println("\n DEBUG : Network.send() - account number " + inComingPacket[inputIndexClient].getAccountNumber()); */
-            
+
+            if(inComingPacket[inputIndexClient].getAccountNumber().equals("") || inComingPacket[inputIndexClient].getAccountNumber().equals(" "))
+                System.out.println("Invalid account!");
+
         		  setinputIndexClient(((getinputIndexClient( ) + 1) % getMaxNbPackets ()));	/* Increment the input buffer index  for the client */
         		  /* Check if input buffer is full */
         		  if (getinputIndexClient() == getoutputIndexServer())
@@ -385,7 +392,7 @@ public class Network extends Thread {
      * @param outPacket updated transaction received by the client
      * 
      */
-         public static boolean receive(Transactions outPacket)
+         public synchronized static boolean receive(Transactions outPacket)
         {
 
         		 outPacket.setAccountNumber(outGoingPacket[outputIndexClient].getAccountNumber());
@@ -422,19 +429,21 @@ public class Network extends Thread {
      * @param outPacket updated transaction transferred by the server to the network output buffer
      * 
      */
-         public static boolean transferOut(Transactions outPacket)
+         public synchronized static boolean transferOut(Transactions outPacket)
         {
-	   	
+                System.out.println("DEBUG T1 Call to Transfer out with " + inputIndexServer);
         		outGoingPacket[inputIndexServer].setAccountNumber(outPacket.getAccountNumber());
         		outGoingPacket[inputIndexServer].setOperationType(outPacket.getOperationType());
         		outGoingPacket[inputIndexServer].setTransactionAmount(outPacket.getTransactionAmount());
         		outGoingPacket[inputIndexServer].setTransactionBalance(outPacket.getTransactionBalance());
         		outGoingPacket[inputIndexServer].setTransactionError(outPacket.getTransactionError());
         		outGoingPacket[inputIndexServer].setTransactionStatus("transferred");
-            
+
+            if(outGoingPacket[inputIndexServer].getAccountNumber().equals("") || outGoingPacket[inputIndexServer].getAccountNumber().equals(" "))
+                System.out.println("Invalid account!");
+
         		/* System.out.println("\n DEBUG : Network.transferOut() - index inputIndexServer " + inputIndexServer); */ 
         		/* System.out.println("\n DEBUG : Network.transferOut() - account number " + outGoingPacket[inputIndexServer].getAccountNumber()); */
-            
         		setinputIndexServer(((getinputIndexServer() + 1) % getMaxNbPackets())); /* Increment the output buffer index for the server */
         		/* Check if output buffer is full */
         		if ( getinputIndexServer( ) == getoutputIndexClient( ))
@@ -457,9 +466,9 @@ public class Network extends Thread {
      * @param inPacket transaction transferred from the input buffer to the server 
      * 
      */
-       public static boolean transferIn(Transactions inPacket)
+       public synchronized static boolean transferIn(Transactions inPacket)
         {
-	
+                System.out.println("DEBUG T1 Call to Transfer in with " + outputIndexServer);
     		     inPacket.setAccountNumber(inComingPacket[outputIndexServer].getAccountNumber());
     		     inPacket.setOperationType(inComingPacket[outputIndexServer].getOperationType());
     		     inPacket.setTransactionAmount(inComingPacket[outputIndexServer].getTransactionAmount());
@@ -469,7 +478,10 @@ public class Network extends Thread {
            
     		     /* System.out.println("\n DEBUG : Network.transferIn() - index outputIndexServer " + outputIndexServer); */
     		     /* System.out.println("\n DEBUG : Network.transferIn() - account number " + inPacket.getAccountNumber()); */
-            
+
+                if(inPacket.getAccountNumber().equals("") || inPacket.getAccountNumber().equals(" "))
+                    System.out.println("Invalid account!");
+
     		     setoutputIndexServer(((getoutputIndexServer() + 1) % getMaxNbPackets()));	/* Increment the input buffer index for the server */
     		     /* Check if input buffer is empty */
     		     if ( getoutputIndexServer( ) == getinputIndexClient( ))
@@ -530,7 +542,7 @@ public class Network extends Thread {
              else
              if (getServerIP().equals(IP))
              {
-                setServerConnectionStatus("disconnected");
+                 setServerConnectionStatus("disconnected");
              }
              return true;
          }

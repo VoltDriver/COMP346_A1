@@ -1,4 +1,6 @@
 
+import com.sun.javaws.exceptions.InvalidArgumentException;
+
 import java.util.Scanner;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -221,15 +223,14 @@ public class Server extends Thread {
      * @return account index position or -1
      */
     public int findAccount(String accNumber) {
-        int i = 0;
-
         /* Find account */
-        while (!(account[i].getAccountNumber().equals(accNumber)))
-            i++;
-        if (i == getNumberOfAccounts())
-            return -1;
-        else
-            return i;
+        for (int index = 0; index < numberOfAccounts; index++) {
+            if (account[index].getAccountNumber().equals(accNumber)) {
+                return index;
+            }
+        }
+
+        return -1;
     }
 
     /**
@@ -245,67 +246,66 @@ public class Server extends Thread {
         /* System.out.println("\n DEBUG : Server.processTransactions() " + getServerThreadId() ); */
 
         /* Process the accounts until the client disconnects */
-        while ((!Network.getClientConnectionStatus().equals("disconnected"))) {
-            // while ( (Network.getInBufferStatus().equals("empty") && !Network.getClientConnectionStatus().equals("disconnected")) )
-            // {
-            //	 Thread.yield(); 	/* Yield the cpu if the network input buffer is empty */
-            // }
+        while ((!Network.getClientConnectionStatus().equals("disconnected")))
+        {
+            synchronized (Server.class)
+            {
+                if (!Network.getInBufferStatus().equals("empty"))
+                {
+                    /* System.out.println("\n DEBUG : Server.processTransactions() - transferring in account " + trans.getAccountNumber()); */
+                    Network.transferIn(trans);                              /* Transfer a transaction from the network input buffer */
 
-            if (!Network.getInBufferStatus().equals("empty")) {
-                /* System.out.println("\n DEBUG : Server.processTransactions() - transferring in account " + trans.getAccountNumber()); */
+                    accIndex = findAccount(trans.getAccountNumber());
 
-                Network.transferIn(trans);                              /* Transfer a transaction from the network input buffer */
+                    if (accIndex == -1)
+                        System.out.println("Account not found!!! was " + trans.getAccountNumber().toString());
+                    /* Process deposit operation */
+                    if (trans.getOperationType().equals("DEPOSIT")) {
+                        // Prevent concurrency on the account.
+                        newBalance = deposit(accIndex, trans.getTransactionAmount());
+                        trans.setTransactionBalance(newBalance);
+                        trans.setTransactionStatus("done");
 
-                accIndex = findAccount(trans.getAccountNumber());
-                /* Process deposit operation */
-                if (trans.getOperationType().equals("DEPOSIT")) {
-                    newBalance = deposit(accIndex, trans.getTransactionAmount());
-                    trans.setTransactionBalance(newBalance);
-                    trans.setTransactionStatus("done");
+                        /* System.out.println("\n DEBUG : Server.processTransactions() - Deposit of " + trans.getTransactionAmount() + " in account " + trans.getAccountNumber()); */
+                    } else if (trans.getOperationType().equals("WITHDRAW")) {
+                        /* Process withdraw operation */
+                        newBalance = withdraw(accIndex, trans.getTransactionAmount());
+                        trans.setTransactionBalance(newBalance);
+                        trans.setTransactionStatus("done");
 
-                    /* System.out.println("\n DEBUG : Server.processTransactions() - Deposit of " + trans.getTransactionAmount() + " in account " + trans.getAccountNumber()); */
+                        /* System.out.println("\n DEBUG : Server.processTransactions() - Withdrawal of " + trans.getTransactionAmount() + " from account " + trans.getAccountNumber()); */
+                    } else if (trans.getOperationType().equals("QUERY")) {
+                        /* Process query operation */
+                        newBalance = query(accIndex);
+                        trans.setTransactionBalance(newBalance);
+                        trans.setTransactionStatus("done");
+
+                        /* System.out.println("\n DEBUG : Server.processTransactions() - Obtaining balance from account" + trans.getAccountNumber()); */
+                    }
+
+                    // Check if network is still available. If it's not, wait until it is back online. Yield CPU time during this time.
+                    // Also wait until the output buffer of the network is not full. Yield CPU time during this time.
+                    // Do note, if the network is disconnected prematurely and a transaction is waiting to be processed,
+                    // the server will have to be killed manually. This is to prevent information loss on a transaction that was completed.
+                    // The same happens if the client is disconnected.
+                    while (Network.getOutBufferStatus().equals("full") ||
+                            Network.getNetworkStatus().equals("inactive") ||
+                            Network.getClientConnectionStatus().equals("disconnected")) {
+                        yield();
+                    }
+
+                    Network.transferOut(trans);                                    /* Transfer a completed transaction from the server to the network output buffer */
+
+                    setNumberOfTransactions((getNumberOfTransactions() + 1));    /* Count the number of transactions processed */
+
                 }
-                else if (trans.getOperationType().equals("WITHDRAW")) {
-                    /* Process withdraw operation */
-                    newBalance = withdraw(accIndex, trans.getTransactionAmount());
-                    trans.setTransactionBalance(newBalance);
-                    trans.setTransactionStatus("done");
-
-                    /* System.out.println("\n DEBUG : Server.processTransactions() - Withdrawal of " + trans.getTransactionAmount() + " from account " + trans.getAccountNumber()); */
-                }
-                else if (trans.getOperationType().equals("QUERY")) {
-                    /* Process query operation */
-                    newBalance = query(accIndex);
-                    trans.setTransactionBalance(newBalance);
-                    trans.setTransactionStatus("done");
-
-                    /* System.out.println("\n DEBUG : Server.processTransactions() - Obtaining balance from account" + trans.getAccountNumber()); */
-                }
-
-                // Check if network is still available. If it's not, wait until it is back online. Yield CPU time during this time.
-                // Also wait until the output buffer of the network is not full. Yield CPU time during this time.
-                // Do note, if the network is disconnected prematurely and a transaction is waiting to be processed,
-                // the server will have to be killed manually. This is to prevent information loss on a transaction that was completed.
-                // The same happens if the client is disconnected.
-                while (Network.getOutBufferStatus().equals("full") ||
-                        Network.getNetworkStatus().equals("inactive") ||
-                        Network.getClientConnectionStatus().equals("disconnected")) {
+                else
+                {
+                    // If the input buffer is empty, we yield our cpu time.
                     yield();
                 }
 
-                Network.transferOut(trans);                                    /* Transfer a completed transaction from the server to the network output buffer */
-
-                // Synchronize to avoid a second thread getting too early of a read of getNumberOfTransactions().
-                synchronized (this) {
-                    setNumberOfTransactions((getNumberOfTransactions() + 1));    /* Count the number of transactions processed */
-                }
-
             }
-            else {
-                // If the input buffer is empty, we yield our cpu time.
-                yield();
-            }
-
         }
 
         /* System.out.println("\n DEBUG : Server.processTransactions() - " + getNumberOfTransactions() + " accounts updated"); */
@@ -401,6 +401,14 @@ public class Server extends Thread {
 
         serverStartTime = System.currentTimeMillis();
 
+        // If we are on thread 1...
+        if (this.getServerThreadId().equals("1")) {
+            setServerThreadRunningStatus1("running");
+        } else {
+            // If we are on thread 2...
+            setServerThreadRunningStatus2("running");
+        }
+
         // Starting processing
         processTransactions(trans);
 
@@ -408,9 +416,24 @@ public class Server extends Thread {
 
         /* .....................................................................................................................................................................................................*/
 
-        System.out.println("\n Terminating server thread - " + " Running time " + (serverEndTime - serverStartTime) + " milliseconds");
+        System.out.println("\n Terminating server thread " + getServerThreadId().toString() + " - " + " Running time " + (serverEndTime - serverStartTime) + " milliseconds");
 
-        Network.disconnect(Network.getServerIP());
+        // If we are on thread 1...
+        if (this.getServerThreadId().equals("1")) {
+            setServerThreadRunningStatus1("idle");
+        } else {
+            // If we are on thread 2...
+            setServerThreadRunningStatus2("idle");
+        }
+
+        // If both thread are idle, then both are done with their work and should be disconnected.
+        if (serverThreadRunningStatus1.equals("idle") &&
+                serverThreadRunningStatus2.equals("idle"))
+        {
+            System.out.println("\n Disconnecting server.");
+            Network.disconnect(Network.getServerIP());
+        }
+
 
         this.interrupt();
     }
