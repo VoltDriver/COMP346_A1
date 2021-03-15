@@ -170,11 +170,10 @@ public class Client extends Thread {
 
              transaction[i].setTransactionStatus("sent");   /* Set current transaction status */
 
-             System.out.println("\n DEBUG : Client.sendTransactions() - sending transaction on account " + transaction[i].getAccountNumber());
+             //System.out.println("\n DEBUG : Client.sendTransactions() - sending transaction on account " + transaction[i].getAccountNumber());
 
              Network.send(transaction[i]);                            /* Transmit current transaction */
              i++;
-             System.out.println("Transaction sent D2");
          }
          
     }

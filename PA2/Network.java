@@ -267,7 +267,7 @@ public class Network extends Thread {
      */
      public synchronized static void setinputIndexClient(int i1)
      {
-         System.out.println("DEBUG inputIndexClient modified from " + inputIndexClient + " to " + i1 );
+         //System.out.println("DEBUG inputIndexClient modified from " + inputIndexClient + " to " + i1 );
          inputIndexClient = i1;
      }
          
@@ -290,7 +290,7 @@ public class Network extends Thread {
      */
      public synchronized static void setinputIndexServer(int i2)
      {
-         System.out.println("DEBUG inputIndexServer modified from " + inputIndexServer + " to " + i2 );
+         //System.out.println("DEBUG inputIndexServer modified from " + inputIndexServer + " to " + i2 );
          inputIndexServer = i2;
      }     
          
@@ -313,7 +313,7 @@ public class Network extends Thread {
      */
      public synchronized static void setoutputIndexServer(int o1)
      {
-         System.out.println("DEBUG outputIndexServer modified from " + outputIndexServer + " to " + o1 );
+         //System.out.println("DEBUG outputIndexServer modified from " + outputIndexServer + " to " + o1 );
          outputIndexServer = o1;
      }
          
@@ -336,7 +336,7 @@ public class Network extends Thread {
      */
      public synchronized static void setoutputIndexClient(int o2)
      {
-         System.out.println("DEBUG outputIndexClient modified from " + outputIndexClient + " to " + o2 );
+         //System.out.println("DEBUG outputIndexClient modified from " + outputIndexClient + " to " + o2 );
          outputIndexClient = o2;
      }
 
@@ -383,7 +383,7 @@ public class Network extends Thread {
         		System.out.println("The process has been interrupted");
         	}	
 		
-            System.out.println("DEBUG T1 Call to Send with " + inputIndexClient);
+            //System.out.println("DEBUG T1 Call to Send with " + inputIndexClient);
         		  inComingPacket[inputIndexClient].setAccountNumber(inPacket.getAccountNumber());
         		  inComingPacket[inputIndexClient].setOperationType(inPacket.getOperationType());
         		  inComingPacket[inputIndexClient].setTransactionAmount(inPacket.getTransactionAmount());
@@ -488,7 +488,7 @@ public class Network extends Thread {
          		System.out.println("The process has been interrupted");
          	}
 		 
-                System.out.println("DEBUG T1 Call to Transfer out with " + inputIndexServer);
+                //System.out.println("DEBUG T1 Call to Transfer out with " + inputIndexServer);
         		outGoingPacket[inputIndexServer].setAccountNumber(outPacket.getAccountNumber());
         		outGoingPacket[inputIndexServer].setOperationType(outPacket.getOperationType());
         		outGoingPacket[inputIndexServer].setTransactionAmount(outPacket.getTransactionAmount());
@@ -541,7 +541,7 @@ public class Network extends Thread {
 	       		System.out.println("The process has been interrupted");
 	       	}
 	       
-                System.out.println("DEBUG T1 Call to Transfer in with " + outputIndexServer);
+                //System.out.println("DEBUG T1 Call to Transfer in with " + outputIndexServer);
     		     inPacket.setAccountNumber(inComingPacket[outputIndexServer].getAccountNumber());
     		     inPacket.setOperationType(inComingPacket[outputIndexServer].getOperationType());
     		     inPacket.setTransactionAmount(inComingPacket[outputIndexServer].getTransactionAmount());
