@@ -24,7 +24,7 @@ public class Network extends Thread {
     private static Transactions outGoingPacket[];              /* Outgoing network buffer */
     private static String inBufferStatus, outBufferStatus;     /* Current status of the network buffers - normal, full, empty */
     private static String networkStatus;                       /* Network status - active, inactive */
-       
+    private static Semaphore transferIn_Full, transferOut_Empty, send_Empty, receive_Full, mutex1, mutex2;   
     /** 
      * Constructor of the Network class
      * 
@@ -56,6 +56,20 @@ public class Network extends Thread {
          outputIndexClient = 0;
                 
          networkStatus = "active";
+	     
+	  // Initializing semaphores..
+         
+         // Controls access to buffers 
+         mutex1 = new Semaphore(1);
+         mutex2 = new Semaphore(1);
+         
+         // Count the number of free slots
+         send_Empty = new Semaphore(maxNbPackets);
+         transferOut_Empty = new Semaphore(maxNbPackets);
+         
+         // Count the number of used slots
+         receive_Full = new Semaphore(0);
+         transferIn_Full = new Semaphore(0);    
       }
         
      /** 
@@ -357,6 +371,18 @@ public class Network extends Thread {
      */
         public synchronized static boolean send(Transactions inPacket)
         {
+	    try 
+        	{
+        	// waiting for access
+        	send_Empty.acquire(); 
+        	// accessing buffer
+        	mutex1.acquire();
+        	}
+        	catch(InterruptedException e)
+        	{
+        		System.out.println("The process has been interrupted");
+        	}	
+		
             System.out.println("DEBUG T1 Call to Send with " + inputIndexClient);
         		  inComingPacket[inputIndexClient].setAccountNumber(inPacket.getAccountNumber());
         		  inComingPacket[inputIndexClient].setOperationType(inPacket.getOperationType());
@@ -383,7 +409,11 @@ public class Network extends Thread {
         		  {
         			  setInBufferStatus("normal");
         		  }
-            
+		
+            // release access to buffer	  
+            mutex1.release();
+            transferIn_Full.release();
+		
             return true;
         }   
          
@@ -394,6 +424,17 @@ public class Network extends Thread {
      */
          public synchronized static boolean receive(Transactions outPacket)
         {
+		  try 
+         	{
+         	// waiting for access
+         	receive_Full.acquire(); 
+         	// accessing buffer
+         	mutex2.acquire();
+         	}
+         	catch(InterruptedException e)
+         	{
+         		System.out.println("The process has been interrupted");
+         	}
 
         		 outPacket.setAccountNumber(outGoingPacket[outputIndexClient].getAccountNumber());
         		 outPacket.setOperationType(outGoingPacket[outputIndexClient].getOperationType());
@@ -417,6 +458,10 @@ public class Network extends Thread {
         		 {
         			 setOutBufferStatus("normal"); 
         		 }
+		 
+	    // release access to buffer	  	 
+            mutex2.release();
+            transferOut_Empty.release(); 
         	            
              return true;
         }   
@@ -431,6 +476,18 @@ public class Network extends Thread {
      */
          public synchronized static boolean transferOut(Transactions outPacket)
         {
+		 try 
+         	{
+         	// waiting for access
+         	transferOut_Empty.acquire(); 
+         	// accessing buffer
+         	mutex2.acquire();
+         	}
+         	catch(InterruptedException e)
+         	{
+         		System.out.println("The process has been interrupted");
+         	}
+		 
                 System.out.println("DEBUG T1 Call to Transfer out with " + inputIndexServer);
         		outGoingPacket[inputIndexServer].setAccountNumber(outPacket.getAccountNumber());
         		outGoingPacket[inputIndexServer].setOperationType(outPacket.getOperationType());
@@ -456,7 +513,11 @@ public class Network extends Thread {
         		{
         			setOutBufferStatus("normal");
         		}
-        	            
+		 
+            // release access to buffer	  
+            mutex2.release();
+            receive_Full.release();  	            
+		 
              return true;
         }   
          
@@ -468,6 +529,18 @@ public class Network extends Thread {
      */
        public synchronized static boolean transferIn(Transactions inPacket)
         {
+	    	try 
+	       	{
+	       	// waiting for access
+	       	transferIn_Full.acquire(); 
+	       	// accessing buffer
+	       	mutex1.acquire();
+	       	}
+	       	catch(InterruptedException e)
+	       	{
+	       		System.out.println("The process has been interrupted");
+	       	}
+	       
                 System.out.println("DEBUG T1 Call to Transfer in with " + outputIndexServer);
     		     inPacket.setAccountNumber(inComingPacket[outputIndexServer].getAccountNumber());
     		     inPacket.setOperationType(inComingPacket[outputIndexServer].getOperationType());
@@ -494,7 +567,11 @@ public class Network extends Thread {
     		     {
     		    	 setInBufferStatus("normal");
     		     }
-            
+	       
+             // release access to buffer	  
+    	     mutex1.release();
+    	     send_Empty.release();
+	       
              return true;
         }   
          
@@ -584,9 +661,9 @@ public class Network extends Thread {
         }
 
         networkEndTime = System.currentTimeMillis();
-
+	    
+	System.out.println("\n Network Thread" + " Running time " + (networkEndTime - networkStartTime) + " milliseconds");
         System.out.println("\n Terminating network thread - Client " + getClientConnectionStatus() + " Server " + getServerConnectionStatus());
-        System.out.println("\n Network Thread" + " Running time " + (networkEndTime - networkStartTime) + " milliseconds");
         this.interrupt();
     }
 }
