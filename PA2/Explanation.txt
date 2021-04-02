@@ -1,0 +1,18 @@
+=================================
+PHASE I
+=================================
+We used a combination of Synchronized blocks and Synchronized methods.
+For some methods in the Network, it did not make sense to have them unsynchronized. Furthermore, the operations they did actually could be harmful to other threads
+in execution if not executed one at a time. So we put some of the methods in network synchronized. This is true for getters and setters, among others, where a code block is unecessary
+since we want the whole operation to be synchronized and not some part of it.
+However, for the server class and its method to process transactions, things get more complicated. We have to use a synchronized block, specifically. Because
+we want the servers to be synchronized with each other, even though they will be different object instances, and the synchronized keyword on a method only prevents
+multiple threads from accessing a single instance, which is not our case with the server class.
+=================================
+PHASE II
+=================================
+Comparing Semephores vs Busy waiting implementation running times.
+
+The running time of the implementation using semaphores is far lower than the running time using 
+busy waiting because the processor does not waste cycles checking for an empty or full buffer. Instead, it 
+suspends processes and notifies them when an empty or full buffer becomes available. 
