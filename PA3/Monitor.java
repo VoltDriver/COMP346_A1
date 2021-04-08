@@ -28,6 +28,9 @@ public class Monitor
 	private int m_currentPiId = 0;
 
 	private Status[] m_philosophersState;
+	// Table that keeps track of how many times philosopher at Index has eaten.
+	// Used to prevent starvation.
+	private int[] m_amountOfTimesHasEaten;
 
 	private boolean m_someoneIsTalking = false;
 
@@ -41,10 +44,16 @@ public class Monitor
 
 		// Initializing our philosophers' statuses
 		m_philosophersState = new Status[piNumberOfPhilosophers];
+		m_amountOfTimesHasEaten = new int[piNumberOfPhilosophers];
 
 		for (int i = 0; i < m_philosophersState.length; i++) {
 			m_philosophersState[i] = Status.thinking;
 		}
+
+		for (int i = 0; i < m_amountOfTimesHasEaten.length; i++) {
+			m_amountOfTimesHasEaten[i] = 0;
+		}
+
 
 		// Initializing our map
 		m_philosopherIds = new HashMap<Integer, Integer>();
@@ -88,8 +97,14 @@ public class Monitor
 		}
 
 		// If one of our neighbors is eating, we can't pickup the sticks.
-		if(m_philosophersState[leftNeighbor] == Status.eating ||
+		// Also, if one of our neighbors is hungry, and has eaten less times than us, we can't eat.
+		if((m_philosophersState[leftNeighbor] == Status.eating ||
 		   m_philosophersState[rightNeighbor] == Status.eating)
+			||
+			((m_philosophersState[leftNeighbor] == Status.hungry) && (m_amountOfTimesHasEaten[leftNeighbor] < m_amountOfTimesHasEaten[id]))
+			||
+			((m_philosophersState[rightNeighbor] == Status.hungry) && (m_amountOfTimesHasEaten[rightNeighbor] < m_amountOfTimesHasEaten[id]))
+		)
 		{
 			do
 			{
@@ -103,11 +118,17 @@ public class Monitor
 				}
 			}
 			// If we were woken up, and a neighbor is still eating, we go back to sleep.
-			while(m_philosophersState[leftNeighbor] == Status.eating ||
-					m_philosophersState[rightNeighbor] == Status.eating);
+			// We also recheck if one of our neighbors is hungry and has eaten less times than us.
+			while((m_philosophersState[leftNeighbor] == Status.eating ||
+					m_philosophersState[rightNeighbor] == Status.eating)
+					||
+					((m_philosophersState[leftNeighbor] == Status.hungry) && (m_amountOfTimesHasEaten[leftNeighbor] < m_amountOfTimesHasEaten[id]))
+					||
+					((m_philosophersState[rightNeighbor] == Status.hungry) && (m_amountOfTimesHasEaten[rightNeighbor] < m_amountOfTimesHasEaten[id]))
+			);
 		}
 
-		// If we are here, it means our neighbors are not eating!
+		// If we are here, it means our neighbors are not eating, and we are allowed to eat!
 	}
 
 	/**
@@ -118,6 +139,9 @@ public class Monitor
 	{
 		// Getting our internal ID
 		int id = getId(piTID);
+
+		// We now have eaten one more time. Let's keep track of it.
+		m_amountOfTimesHasEaten[id] = m_amountOfTimesHasEaten[id] + 1;
 
 		// Declaring we are done eating.
 		m_philosophersState[id] = Status.thinking;
