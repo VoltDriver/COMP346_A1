@@ -20,14 +20,14 @@ public class Monitor
 	// Statuses of our philosophers. Note:
 	// Thinking is the neutral state
 	// hungry is the state where a philosopher wants to eat
-	private enum Status { eating, hungry, thinking };
+	public enum Status { eating, hungry, thinking };
 	// Number of chopsticks on the table. Also represents the number of philosophers.
 	private int m_nbOfChopsticks = 0;
 	// Map of the philosopher ids
 	private HashMap<Integer, Integer> m_philosopherIds;
 	private int m_currentPiId = 0;
 
-	private Status[] m_philosophersState;
+	public Status[] m_philosophersState;
 	// Table that keeps track of how many times philosopher at Index has eaten.
 	// Used to prevent starvation.
 	private int[] m_amountOfTimesHasEaten;
@@ -129,6 +129,7 @@ public class Monitor
 		}
 
 		// If we are here, it means our neighbors are not eating, and we are allowed to eat!
+		m_philosophersState[id] = Status.eating;
 	}
 
 	/**
